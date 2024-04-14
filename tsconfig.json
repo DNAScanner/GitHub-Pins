@@ -1,0 +1,9 @@
+{
+	"include": ["./embed.ts"],
+	"compilerOptions": {
+		"module": "ES2022",
+		"target": "ES2022",
+		"removeComments": false,
+		"sourceMap": false
+	}
+}

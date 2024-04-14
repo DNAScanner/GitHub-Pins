@@ -1,0 +1,5 @@
+{
+	"compilerOptions": {
+		"lib": ["deno.window", "es6", "dom"]
+	}
+}
