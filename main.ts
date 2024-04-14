@@ -4,18 +4,21 @@ Deno.serve({port: 8001}, async (req: Request) => {
 	const path = new URL(req.url).pathname.split("/").filter((x) => x !== "");
 	console.log(path);
 
+	const headers = new Headers();
+	headers.set("Access-Control-Allow-Origin", "*");
+	headers.set("Access-Control-Allow-Methods", "GET");
+	headers.set("Access-Control-Allow-Headers", "Content-Type");
+
 	if (req.method === "GET" && path[0] === "pinned" && path[1] !== undefined && path.length === 2) {
 		const username = path[1].trim();
 
 		const pins = await getPins(username);
+		headers.set("Content-Type", "text/html");
 
-		return new Response(Deno.readTextFileSync("embed.html").replace("/*SCRIPT*/", Deno.readTextFileSync("embed.js")).replace("/*PINS*/", JSON.stringify(pins).slice(1, -1)), {
-			headers: {"Content-Type": "text/html"},
-		});
+		return new Response(Deno.readTextFileSync("embed.html").replace("/*SCRIPT*/", Deno.readTextFileSync("embed.js")).replace("/*PINS*/", JSON.stringify(pins).slice(1, -1)), {headers});
 	} else if (req.method === "GET" && path[0] === "raw" && path[1] !== undefined && path.length === 2) {
-		return new Response(JSON.stringify(await getPins(path[1].trim())), {
-			headers: {"Content-Type": "application/json"},
-		});
+		headers.set("Content-Type", "application/json");
+		return new Response(JSON.stringify(await getPins(path[1].trim())), {headers});
 	} else return new Response("Not found", {status: 404});
 });
 
