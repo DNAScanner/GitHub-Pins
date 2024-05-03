@@ -1,5 +1,24 @@
 import {DOMParser} from "https://deno.land/x/deno_dom@v0.1.45/deno-dom-wasm.ts";
 
+type Pin = {
+	name: string;
+	url: string;
+	languages: {
+		name: string;
+		part: number;
+		color: string;
+	}[];
+};
+
+type Cache = {
+	username: string;
+	lastPinnedHTML: string;
+	data: Pin[];
+	lastUpdated: number;
+};
+
+const cache: Cache[] = [];
+
 Deno.serve({port: 8001}, async (req: Request) => {
 	const path = new URL(req.url).pathname.split("/").filter((x) => x !== "");
 	console.log(path);
@@ -10,7 +29,7 @@ Deno.serve({port: 8001}, async (req: Request) => {
 	headers.set("Access-Control-Allow-Headers", "Content-Type");
 
 	if (req.method === "GET" && path[0] === "pinned" && path[1] !== undefined && path.length === 2) {
-		const username = path[1].trim();
+		const username = path[1].trim().toLowerCase();
 
 		const pins = await getPins(username);
 		headers.set("Content-Type", "text/html");
@@ -23,21 +42,22 @@ Deno.serve({port: 8001}, async (req: Request) => {
 });
 
 const getPins = async (username: string) => {
-	const userPage = new DOMParser().parseFromString(await (await fetch("https://github.com/" + username)).text(), "text/html");
+	const cached = cache.find((x) => x.username === username);
 
-	type Pin = {
-		name: string;
-		url: string;
-		languages: {
-			name: string;
-			part: number;
-			color: string;
-		}[];
-	};
+	if (cached !== undefined && Date.now() - cached.lastUpdated < 1000 * 60) return cached.data;
+
+	console.log("Fetching data for", username);
+
+	const userPage = new DOMParser().parseFromString(await (await fetch("https://github.com/" + username)).text(), "text/html");
 
 	const pins: Pin[] = [];
 
-	for (const pin of Array.from((userPage?.querySelectorAll(".js-pinned-items-reorder-list")[0] as unknown as HTMLOListElement)?.children || [])) {
+	const pinElements = Array.from((userPage?.querySelectorAll(".js-pinned-items-reorder-list")[0] as unknown as HTMLOListElement)?.children || []);
+
+	// console.log(pinElements[0].parentElement?.innerHTML);
+	if (cached !== undefined && pinElements[0].parentElement?.innerHTML === cached.lastPinnedHTML) return cached.data;
+
+	for (const pin of pinElements) {
 		const repoUrl = pin.querySelector("a")?.getAttribute("href");
 
 		const repoPage = new DOMParser().parseFromString(await (await fetch("https://github.com" + repoUrl)).text(), "text/html");
@@ -61,6 +81,17 @@ const getPins = async (username: string) => {
 			languages: langs,
 		});
 	}
+
+	if (cached !== undefined) {
+		cached.data = pins;
+		cached.lastUpdated = Date.now();
+	} else
+		cache.push({
+			username,
+			lastPinnedHTML: pinElements[0].parentElement?.innerHTML || "",
+			data: pins,
+			lastUpdated: Date.now(),
+		});
 
 	return pins;
 };

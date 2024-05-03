@@ -16,6 +16,23 @@ deno run -A main.ts
 ```
 
 3. Open the site in your browser, for example: http://localhost:8001/pinned/DNAScanner and the site should look as following:
-![Side example](doc/1.png)
+   ![Example](doc/1.png)
 
 4. Data can also be requested in JSON format, by replacing "pinned" with "raw" in the URL: http://localhost:8001/raw/DNAScanner
+
+## Caching
+
+```mermaid
+graph TB
+A[User requests data]
+
+A        --> B(Is the user in the cache?)
+B -- No  --> C(Freshly fetch data)
+B -- Yes --> D(Is the data on the main page older than 1 minute?)
+D -- No  --> E(Return cached data directly)
+D -- Yes --> F(Have the pins on the main page significantly changed?)
+F -- No  --> G(Return cached data directly)
+F -- Yes --> H(Freshly fetch data)
+H        --> I(Update cache)
+C        --> I
+```
