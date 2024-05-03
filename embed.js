@@ -50,10 +50,14 @@ for (const pin of pins) {
         entry.appendChild(part);
     }
     document.body.appendChild(wrapper);
-    if (widestChild < wrapper.getBoundingClientRect().width + 10)
-        widestChild = wrapper.getBoundingClientRect().width + 10;
+    if (widestChild < wrapper.getBoundingClientRect().width + 10) {
+        const wrapperWidth = wrapper.getBoundingClientRect().width;
+        const wrapperMargin = parseFloat(getComputedStyle(wrapper).marginLeft) + parseFloat(getComputedStyle(wrapper).marginRight);
+        widestChild = wrapperWidth + wrapperMargin;
+    }
 }
-setTimeout(() => {
-    for (const pin of Array.from(document.querySelectorAll(".pin-wrapper")))
-        pin.style.width = widestChild + "px";
-}, 100);
+// If there is a url query called "cols" (=> max columns), make the body so wide, that it fits the amount of columns
+if (location.search.includes("cols"))
+    document.body.style.width = `calc(${widestChild}px * ${new URLSearchParams(location.search).get("cols")})`;
+if (location.search.includes("transparent"))
+    document.body.style.backgroundColor = "transparent";
