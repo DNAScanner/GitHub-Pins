@@ -4,7 +4,7 @@ Hey, this is a simple project i made for fun, which displays the pinned reposito
 
 A live version of the project can be found [here](https://gh-pins.dnascanner.de/pinned/dnascanner)
 
-⚠️ **Note:** The page might take a few seconds to load, as it grabs the data right of the github site instead of the API (which doesn't exist unfortunately). This however is due to <u>the server's</u> personal internet connection
+⚠️ **Note:** The page might take a few seconds to load, as it grabs the data right of the github site instead of an API (which doesn't exist unfortunately). This however is due to <u>the server's</u> own internet connection and not due to the code itself
 
 ## How to use
 
@@ -17,41 +17,13 @@ deno run -A main.ts
 
 3. Open frontend in your browser:
 
-- https://gh-pins.dnascanner.de/pinned/dnascanner
-![](doc/pinned/dnascanner.png)
+### Routes
 
-- https://gh-pins.dnascanner.de/raw/dnascanner
-Responds with just the pinned repositories in JSON format like this:
-
-```ts
-[
-	{
-		name: "GitHub-Pins",
-		url: "https://github.com/DNAScanner/GitHub-Pins",
-		languages: [
-			{
-				name: "TypeScript",
-				part: 0.592,
-				color: "#3178C6",
-			},
-			{
-				name: "JavaScript",
-				part: 0.232,
-				color: "#F1E05A",
-			},
-			{
-				name: "HTML",
-				part: 0.176,
-				color: "#E34C26",
-			},
-		],
-	},
-];
-```
-
-- https://gh-pins.dnascanner.de/image/dnascanner?cols=3
-Simply returns a rendered image of the pinned repositories like this:
-![](https://gh-pins.dnascanner.de/image/dnascanner?cols=3)
+| Route               | Description                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `/pinned/:username` | Displays the pinned repositories of the given user (returns an HTML document)     |
+| `/raw/:username`    | Returns the pinned repositories in JSON format                                    |
+| `/image/:username`  | Returns a rendered image (with transparent background) of the pinned repositories |
 
 ## Caching
 
