@@ -1,5 +1,5 @@
 import {DOMParser} from "https://deno.land/x/deno_dom@v0.1.45/deno-dom-wasm.ts";
-import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
+import puppeteer, {Browser} from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 type Pin = {
 	name: string;
@@ -28,9 +28,19 @@ try {
 
 setInterval(() => Deno.readTextFileSync("cache.json") !== JSON.stringify(cache, null, 6) && Deno.writeTextFileSync("cache.json", JSON.stringify(cache, null, 6)), 1000);
 
-const browser = await puppeteer.launch({
-	executablePath: Deno.build.os !== "windows" ? "/usr/bin/chromium-browser" : "C:/Program Files/Google/Chrome/Application/chrome.exe",
-});
+let browser: Browser | undefined;
+
+const establishPuppeteerConnection = async () => {
+	browser = await puppeteer.launch({
+		executablePath: Deno.build.os !== "windows" ? "/usr/bin/chromium-browser" : "C:/Program Files/Google/Chrome/Application/chrome.exe",
+		headless: true,
+		args: ["--no-sandbox", "--disable-setuid-sandbox"],
+	});
+
+	browser.on("disconnected", establishPuppeteerConnection);
+};
+
+establishPuppeteerConnection();
 
 Deno.serve({port: 8001}, async (req: Request) => {
 	const path = new URL(req.url).pathname.split("/").filter((x) => x !== "");
@@ -54,7 +64,7 @@ Deno.serve({port: 8001}, async (req: Request) => {
 	} else if (req.method === "GET" && path[0] === "image" && path[1] !== undefined && path.length === 2) {
 		const username = path[1].trim().toLowerCase();
 
-		const page = await browser.newPage();
+		const page = await browser!.newPage();
 		await page.setViewport({width: 8192, height: 8192});
 		await page.goto(`http://localhost:8001/pinned/${username}?cols=${new URL(req.url).searchParams.get("cols") || 3}&transparent=true`);
 		const image = await (await page.$("body"))?.screenshot({type: "png", omitBackground: true});
@@ -68,7 +78,7 @@ Deno.serve({port: 8001}, async (req: Request) => {
 const getPins = async (username: string) => {
 	const cached = cache.find((x) => x.username === username);
 
-	if (cached !== undefined && Date.now() - cached.lastUpdated < 1000 * 60) return cached.data;
+	if (cached !== undefined && Date.now() - cached.lastUpdated < 1000 * 60 * 5) return cached.data;
 
 	console.log("Fetching data for", username);
 
