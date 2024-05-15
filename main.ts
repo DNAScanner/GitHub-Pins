@@ -31,13 +31,18 @@ setInterval(() => Deno.readTextFileSync("cache.json") !== JSON.stringify(cache, 
 let browser: Browser | undefined;
 
 const establishPuppeteerConnection = async () => {
-	browser = await puppeteer.launch({
-		executablePath: Deno.build.os !== "windows" ? "/usr/bin/chromium-browser" : "C:/Program Files/Google/Chrome/Application/chrome.exe",
-		headless: true,
-		args: ["--no-sandbox", "--disable-setuid-sandbox"],
-	});
-
-	browser.on("disconnected", establishPuppeteerConnection);
+	try {
+		browser = await puppeteer.launch({
+			executablePath: Deno.build.os !== "windows" ? "/usr/bin/chromium-browser" : "C:/Program Files/Google/Chrome/Application/chrome.exe",
+			headless: true,
+			args: ["--no-sandbox", "--disable-setuid-sandbox"],
+		});
+	
+		browser.on("disconnected", establishPuppeteerConnection);
+	} catch (error) {
+		console.error("Failed to establish Puppeteer connection", error);
+		setTimeout(establishPuppeteerConnection, 100);
+	}
 };
 
 establishPuppeteerConnection();
