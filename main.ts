@@ -37,8 +37,10 @@ const establishPuppeteerConnection = async () => {
 			headless: true,
 			args: ["--no-sandbox", "--disable-setuid-sandbox"],
 		});
-	
+
 		browser.on("disconnected", establishPuppeteerConnection);
+		browser.on("error", establishPuppeteerConnection);
+		browser.on("close", establishPuppeteerConnection);
 	} catch (error) {
 		console.error("Failed to establish Puppeteer connection", error);
 		setTimeout(establishPuppeteerConnection, 100);
