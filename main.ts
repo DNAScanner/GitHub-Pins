@@ -71,11 +71,18 @@ Deno.serve({port: 8001}, async (req: Request) => {
 	} else if (req.method === "GET" && path[0] === "image" && path[1] !== undefined && path.length === 2) {
 		const username = path[1].trim().toLowerCase();
 
-		const page = await browser!.newPage();
-		await page.setViewport({width: 8192, height: 8192});
-		await page.goto(`http://localhost:8001/pinned/${username}?cols=${new URL(req.url).searchParams.get("cols") || 3}&transparent=true`);
-		const image = await (await page.$("body"))?.screenshot({type: "png", omitBackground: true});
-		page.close();
+		let page;
+		try {
+			await browser!.newPage();
+		} catch {
+			await establishPuppeteerConnection();
+			page = await browser!.newPage();
+		}
+
+		await page?.setViewport({width: 8192, height: 8192});
+		await page?.goto(`http://localhost:8001/pinned/${username}?cols=${new URL(req.url).searchParams.get("cols") || 3}&transparent=true`);
+		const image = await (await page?.$("body"))?.screenshot({type: "png", omitBackground: true});
+		page?.close();
 
 		headers.set("Content-Type", "image/png");
 		return new Response(image, {headers});
