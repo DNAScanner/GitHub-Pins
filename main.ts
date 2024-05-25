@@ -36,6 +36,7 @@ const establishPuppeteerConnection = async () => {
 			executablePath: Deno.build.os !== "windows" ? "/usr/bin/chromium-browser" : "C:/Program Files/Google/Chrome/Application/chrome.exe",
 			headless: true,
 			args: ["--no-sandbox", "--disable-setuid-sandbox"],
+			timeout: 10000,
 		});
 
 		browser.on("disconnected", establishPuppeteerConnection);
@@ -43,11 +44,12 @@ const establishPuppeteerConnection = async () => {
 		browser.on("close", establishPuppeteerConnection);
 	} catch (error) {
 		console.error("Failed to establish Puppeteer connection", error);
-		setTimeout(establishPuppeteerConnection, 100);
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		await establishPuppeteerConnection();
 	}
 };
 
-establishPuppeteerConnection();
+await establishPuppeteerConnection();
 
 Deno.serve({port: 8001}, async (req: Request) => {
 	const path = new URL(req.url).pathname.split("/").filter((x) => x !== "");
@@ -71,18 +73,12 @@ Deno.serve({port: 8001}, async (req: Request) => {
 	} else if (req.method === "GET" && path[0] === "image" && path[1] !== undefined && path.length === 2) {
 		const username = path[1].trim().toLowerCase();
 
-		let page;
-		try {
-			await browser!.newPage();
-		} catch {
-			await establishPuppeteerConnection();
-			page = await browser!.newPage();
-		}
+		const page = await browser!.newPage();
 
-		await page?.setViewport({width: 8192, height: 8192});
-		await page?.goto(`http://localhost:8001/pinned/${username}?cols=${new URL(req.url).searchParams.get("cols") || 3}&transparent=true`);
-		const image = await (await page?.$("body"))?.screenshot({type: "png", omitBackground: true});
-		page?.close();
+		await page.setViewport({width: 8192, height: 8192});
+		await page.goto(`http://localhost:8001/pinned/${username}?cols=${new URL(req.url).searchParams.get("cols") || 3}&transparent=true`);
+		const image = await (await page.$("body"))?.screenshot({type: "png", omitBackground: true});
+		page.close();
 
 		headers.set("Content-Type", "image/png");
 		return new Response(image, {headers});
@@ -96,7 +92,19 @@ const getPins = async (username: string) => {
 
 	console.log("Fetching data for", username);
 
-	const userPage = new DOMParser().parseFromString(await (await fetch("https://github.com/" + username)).text(), "text/html");
+	const userPageFetch = await fetch("https://github.com/" + username);
+
+	if (userPageFetch.status === 404) {
+		return [
+			{
+				name: "User not found",
+				url: "https://github.com/" + username,
+				languages: [{name: "404", part: 1, color: "#FF0000"}],
+			},
+		] as Pin[];
+	}
+
+	const userPage = new DOMParser().parseFromString(await userPageFetch.text(), "text/html");
 
 	const pins: Pin[] = [];
 
