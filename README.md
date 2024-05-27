@@ -25,6 +25,8 @@ deno run -A main.ts
 | `/raw/:username`    | Returns the pinned repositories in JSON format                                    |
 | `/image/:username`  | Returns a rendered image (with transparent background) of the pinned repositories |
 
+⚠️ **Note:** `/image/:username` is currently disabled entirely
+
 ## Caching
 
 ```mermaid
