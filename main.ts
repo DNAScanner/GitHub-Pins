@@ -35,7 +35,6 @@ const establishPuppeteerConnection = async () => {
 		browser = await puppeteer.launch({
 			executablePath: Deno.build.os !== "windows" ? "/usr/bin/chromium-browser" : "C:/Program Files/Google/Chrome/Application/chrome.exe",
 			headless: true,
-			args: ["--no-sandbox", "--disable-setuid-sandbox"],
 			timeout: 10000,
 		});
 
