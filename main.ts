@@ -30,7 +30,10 @@ setInterval(() => Deno.readTextFileSync("cache.json") !== JSON.stringify(cache, 
 
 let browser: Browser | undefined;
 
+const noImage = true;
+
 const establishPuppeteerConnection = async () => {
+	if (noImage) return;
 	try {
 		browser = await puppeteer.launch({
 			executablePath: Deno.build.os !== "windows" ? "/usr/bin/chromium-browser" : "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -69,7 +72,7 @@ Deno.serve({port: 8001}, async (req: Request) => {
 	} else if (req.method === "GET" && path[0] === "raw" && path[1] !== undefined && path.length === 2) {
 		headers.set("Content-Type", "application/json");
 		return new Response(JSON.stringify(await getPins(path[1].trim())), {headers});
-	} else if (req.method === "GET" && path[0] === "image" && path[1] !== undefined && path.length === 2) {
+	} else if (req.method === "GET" && path[0] === "image" && path[1] !== undefined && path.length === 2  && !noImage) {
 		const username = path[1].trim().toLowerCase();
 
 		const page = await browser!.newPage();
